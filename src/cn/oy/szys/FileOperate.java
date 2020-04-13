@@ -1,17 +1,21 @@
 package cn.oy.szys;
 
+import cn.oy.util.IOUtils;
+import cn.oy.constant.IOConstant;
 import cn.oy.constant.StringConstant;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * 对传入的答案 和 题目 文件进行批改处理
  */
 public class FileOperate {//传式子跟答案进文件
 
+    String suffix = StringConstant.FILE_SUFFIX;
+
     //将题目文件 和 答案文件 进行匹配校验，并写入 Grade 文件中
     public FileOperate()  {
-
     }
 
     /**
@@ -23,24 +27,23 @@ public class FileOperate {//传式子跟答案进文件
      * @param num
      */
     public void doCreate(String[] exercises, String[] answers, String exercisesName, String answersName, int num){
+        String  line = "\n";
         try {
-            //获取文件
-            File file1 = new File(StringConstant.EXERCISES_PATH + exercisesName);
-            BufferedWriter reader1 = new BufferedWriter(new FileWriter(file1));
+            //获取题目和答案字节流
 
-            File file2 = new File(StringConstant.ANSWERS_PATH + answersName);
-            BufferedWriter reader2 = new BufferedWriter(new FileWriter(file2));
+            BufferedWriter writer1 = (BufferedWriter) IOUtils.getIO(StringConstant.EXERCISES_PATH + exercisesName, IOConstant.WRITER.name());
+
+            BufferedWriter writer2 = (BufferedWriter) IOUtils.getIO(StringConstant.ANSWERS_PATH + answersName, IOConstant.WRITER.name());
 
             //将表达式写入到对应的文件中
             for (int i = 1; i <= num; i++) {
-                reader1.write(i + "、" + exercises[i - 1] + "=" + "\n");
-                reader1.flush();
-                reader2.write(i + "、" + exercises[i - 1] + "=" + answers[i - 1] + "\n");
-                reader2.flush();
+                writer1.write(i + "、" + exercises[i - 1] + "=" + line);
+                writer1.flush();
+                writer2.write(i + "、" + exercises[i - 1] + "=" + answers[i - 1] + line);
+                writer2.flush();
             }
             //关闭流
-            reader1.close();
-            reader2.close();
+            IOUtils.closeIO(writer1, writer2);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,80 +55,102 @@ public class FileOperate {//传式子跟答案进文件
      * @param answersName
      * @throws IOException
      */
-    public void proFile(String exercisesName, String answersName) throws IOException{
-        //题目位置索引
-        int idx = 0;
+    public void proFile(String exercisesName, String answersName, int questions) throws IOException{
+        //题目序号
+        int idx = 1;
         //正确题数
         int correctCount = 0;
         //错误题数
         int wrongCount = 0;
 
-        String str1 = "";
-        String str2 = "";
-
-        //存储正确题目的标号（题目数最多为 10000，从 0 开始计算，偏移量为 1）
-        String[] correct = new String[10000];
+        if(questions <= 0){
+            questions = 10000;
+        }
+        //存储正确题目的标号（从 0 开始计算，偏移量为 1）
+        String[] corrects = new String[questions];
         //存储错误题目的标号
-        String[] wrong = new String[10000];
+        String[] wrongs = new String[questions];
 
         //获取题目文件的序号
         int index = exercisesName.indexOf(".");
         char num = exercisesName.charAt(index - 1);
-        //获取正确答案文件名
-        String correctAnswerFileName =  StringConstant.ANSWERS_PREFIXX + num + ".txt";
 
-        //读取正确答案文件
-        File file1 = new File(StringConstant.ANSWERS_PATH + correctAnswerFileName);
-        BufferedReader reader1 = new BufferedReader(new FileReader(file1));
+        //获取官方 Answers.txt 路径 + 文件名
+        String officialAnswerFile =  StringConstant.ANSWERS_PATH + StringConstant.ANSWERS_PREFIXX + num + suffix;
+        //获取给定 Answers.txt 路径 + 文件名
+        String givenAnswerFile = StringConstant.ANSWERS_PATH + answersName;
 
-        //读取给定答案文件
-        File file2 = new File(StringConstant.ANSWERS_PATH + answersName);
-        BufferedReader reader2 = new BufferedReader(new FileReader(file2));
+        //获取官方答案文件字节流
+        BufferedReader reader1 = (BufferedReader) IOUtils.getIO( officialAnswerFile, IOConstant.READER.name());
+        //获取给定答案文件字节流
+        BufferedReader reader2 = (BufferedReader) IOUtils.getIO(givenAnswerFile, IOConstant.READER.name());
+
+        String str1 = "";
+        String str2 = "";
 
         //将官方答案和给定答案进行匹配校验
         while ((str1 = reader1.readLine()) != null && (str2 = reader2.readLine()) != null) {
-            idx++;
             if (str1.equals(str2) && !str1.equals("\n")) {
-                correctCount++;
-                correct[correctCount - 1] = String.valueOf(idx);
+                corrects[correctCount++] = String.valueOf(idx);
             } else {
-                wrongCount++;
-                wrong[wrongCount - 1] = String.valueOf(idx);
+                wrongs[wrongCount++] = String.valueOf(idx);
             }
+            idx++;
         }
+        //关闭流
+        IOUtils.closeIO(reader1,reader2);
 
+        //记录正确题号和错误题号到文件中
+        inputFinally(correctCount, wrongCount, corrects, wrongs);
 
-        //将结果输入到 Grade.txt 文件中
-        File file3 = new File(StringConstant.FINALLY_PATH + "Finally.txt");
-        BufferedWriter reader3 = new BufferedWriter(new FileWriter(file3));
+    }
+
+    /**
+     * 将正确的题号 和 错误的题号 输入到 Finally.txt 文件中
+     * @param correctCount
+     * @param wrongCount
+     * @param corrects
+     * @param wrongs
+     * @throws IOException
+     */
+    private void inputFinally(int correctCount, int wrongCount, String[] corrects, String[] wrongs) throws IOException {
+        String left = "(";
+        String right = ")";
+        String line = "\n";
+        String comma = ",";
+        String correctName = "Correct:";
+        String wrongName = "Wrong:";
+
+        //获取字节流
+        BufferedWriter writer = (BufferedWriter) IOUtils.getIO(
+                StringConstant.FINALLY_PATH + StringConstant.FINALLY_PREFIXX + suffix, IOConstant.WRITER.name());
 
         //输入正确的题号
-        reader3.write("Correct:" + correctCount + "(");
-        reader3.flush();
+        writer.write(correctName + correctCount + left);
+        writer.flush();
 
         for (int x = 0; x < correctCount; x++) {
             if (x != correctCount - 1)
-                reader3.write(correct[x] + ",");
+                writer.write(corrects[x] + comma);
             else
-                reader3.write(correct[x]);
-            reader3.flush();
+                writer.write(corrects[x]);
+            writer.flush();
         }
 
         //输入错误的题号
-        reader3.write(")" + "\n" + "Wrong:" + wrongCount + "(");
-        reader3.flush();
+        writer.write(right + line + wrongName + wrongCount + left);
+        writer.flush();
 
         for (int x = 0; x < wrongCount; x++) {
             if (x != wrongCount - 1)
-                reader3.write(wrong[x] + ",");
+                writer.write(wrongs[x] + comma);
             else
-                reader3.write(wrong[x]);
-            reader3.flush();
+                writer.write(wrongs[x]);
+            writer.flush();
         }
-        reader3.write(")" + "\n");
-        reader3.flush();
+        writer.write(right + line);
+        writer.flush();
         //流的关闭
-        reader3.close();
+        IOUtils.closeIO(writer);
     }
-
 }
