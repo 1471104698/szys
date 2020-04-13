@@ -11,12 +11,18 @@ public interface StringConstant {
     String EXERCISES_PATH = "Exercises/";
     //答案文件路径
     String ANSWERS_PATH = "Answers/";
+    //题目和答案校对结果文件路径
+    String FINALLY_PATH = "Finally/";
 
     //题目文件名前缀
     String EXERCISES_PREFIXX = "Exercises";
     //答案文件名前缀
     String ANSWERS_PREFIXX = "Answers";
+    //题目和答案校对结果文件名前缀
+    String FINALLY_PREFIXX = "Finally";
 
-    //题目和答案校对结果文件路径
-    String FINALLY_PATH = "Finally/";
+
+
+    //默认文件后缀
+    String FILE_SUFFIX = ".txt";
 }

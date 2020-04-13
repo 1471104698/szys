@@ -13,14 +13,12 @@ public class OpenMain {
     int questions = 0;
 
     public void test() {
-        /*
-         range 和 questions 默认为 0，这是初始状态，需要通过输入来改变，不能
-         */
+
         FileName question = new FileName();
 
         System.out.println("当前已有的题目文件：");
         //获取所有的题目文件数
-        question.get_ExercisesName();
+        question.getExercisesName();
         //question.get_AnswersName();
 
         System.out.println("生成题目的个数，示例：-n 10 ");
@@ -30,7 +28,10 @@ public class OpenMain {
         while (true) {
             //输入操作指令
             inputOpStrs();
-
+            if(range < 0 || questions < 0){
+                System.out.println("参数值必须为正数");
+                continue;
+            }
             if (range == 0 || questions == 0) {
                 if (questions == 0)
                     System.out.println("未输入题目数量");
@@ -43,17 +44,13 @@ public class OpenMain {
                     System.out.println("生成的题目的数值范围为：" + range);
                 }
             } else {
-                try {
-                    new Get_NewFormula(range, questions);//题目生成
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("题目生成完毕，题目文件存放在项目目录的 Exercisees 文件夹中,答案文件存放在 Answers 文件夹中");
+                new Create(range, questions);//题目生成
+                System.out.println("题目生成完毕，题目文件存放在项目目录的 Exercises 文件夹中,答案文件存放在 Answers 文件夹中");
                 this.range = 0;               //初始化数组范围和题目数量范围
                 this.questions = 0;
                 System.out.println("数值范围与题目数量已初始化");
                 System.out.println("当前已有的题目文件：");
-                question.get_ExercisesName();
+                question.getExercisesName();
             }
 
         }
@@ -81,7 +78,7 @@ public class OpenMain {
                 try {
                     //opStrs[1]是题目文件名，opStrs[3]是答案文件名，FileOperate：文件操作类
                     //根据传入的题目文件名 和 答案文件名 进行 匹配校验
-                    new FileOperate().proFile(opStrs[1], opStrs[3]);
+                    new FileOperate().proFile(opStrs[1], opStrs[3], questions);
                     System.out.println("对错判断完毕,请在 Finally 文件夹中查看");
                 } catch (IOException e) {
                     e.printStackTrace();
